@@ -236,4 +236,5 @@ test-images: _ensure-env
 clean:
     docker compose down -v
     @# Data dirs may be owned by Airflow container (UID 50000), use Docker to clean
-    @docker run --rm -v "{{justfile_directory()}}/data:/data" alpine rm -rf /data/raw /data/archived /data/converted /data/validated /data/done /data/rejected 2>/dev/null || rm -rf data/raw/ data/archived/ data/converted/ data/validated/ data/done/ data/rejected/
+    @# Delete contents but preserve .gitkeep files
+    @docker run --rm -v "{{justfile_directory()}}/data:/data" alpine find /data -mindepth 2 ! -name .gitkeep -delete 2>/dev/null || find data -mindepth 2 ! -name .gitkeep -delete
