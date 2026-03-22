@@ -1,0 +1,133 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    loaded_at_field: _loaded_at
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 72, period: hour}
+    tables:
+      - name: ssa_forenames
+        description: US SSA forenames by year
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: ons_forenames
+        description: ONS England & Wales forename data
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: nrs_forenames
+        description: NRS Scotland forename data
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: nisra_forenames
+        description: NISRA Northern Ireland forename data
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: wales_forenames
+        description: Wales-specific forename data
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: census_surnames
+        description: US Census surname frequency data
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: england_surnames
+        description: Common surnames in England (2014)
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: nrs_surnames
+        description: NRS Scotland most common surnames
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: cso_forenames_boys
+        description: CSO Ireland boys forenames
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: cso_forenames_girls
+        description: CSO Ireland girls forenames
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: cso_surnames
+        description: CSO Ireland surnames
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: ni_surnames
+        description: Irish-origin surnames from Wikipedia (proxy for Northern Ireland)
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+      - name: wales_surnames
+        description: Wales surnames from Wikipedia + Wiktionary (2002 data)
+        columns:
+          - name: name
+            tests:
+              - not_null:
+                  severity: warn
+          - name: _loaded_at
+            tests: [not_null]
+
+  - name: public
+    schema: public
+    tables:
+      - name: countries
+      - name: genders

@@ -1,0 +1,249 @@
+version: 2
+
+models:
+  - name: stg_ssa_forenames
+    description: >
+      Cleaned US SSA forename data (2.1M rows). Names filtered to letter-only
+      characters (including accented/Unicode letters), sex codes validated as M/F.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year]
+    columns:
+      - name: name
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+      - name: gender_code
+        tests: [not_null, {accepted_values: {values: ['M', 'F']}}]
+      - name: birth_count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: "date '1880-01-01'", max_value: "date '2030-01-01'"}}]
+
+  - name: stg_ons_forenames
+    description: Cleaned ONS England forename data
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_code
+        tests: [not_null, {accepted_values: {values: ['M', 'F']}}]
+      - name: birth_count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_nrs_forenames
+    description: Cleaned NRS Scotland forename data
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_code
+        tests: [not_null, {accepted_values: {values: ['M', 'F']}}]
+      - name: birth_count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_nisra_forenames
+    description: Cleaned NISRA Northern Ireland forename data
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_code
+        tests: [not_null, {accepted_values: {values: ['M', 'F']}}]
+      - name: birth_count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_wales_forenames
+    description: Cleaned Wales forename data
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_code
+        tests: [not_null, {accepted_values: {values: ['M', 'F']}}]
+      - name: birth_count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_cso_forenames_boys
+    description: Cleaned CSO Ireland boys forename data
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_code
+        tests: [not_null, {accepted_values: {values: ['M']}}]
+      - name: birth_count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_cso_forenames_girls
+    description: Cleaned CSO Ireland girls forename data
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_code
+        tests: [not_null, {accepted_values: {values: ['F']}}]
+      - name: birth_count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_census_surnames
+    description: >
+      Cleaned US Census surname data (162K rows). Names filtered to
+      alpha-only characters, counts validated as positive integers.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, year]
+    columns:
+      - name: name
+        tests:
+          - not_null
+          - dbt_utils.not_empty_string
+      - name: count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_england_surnames
+    description: >
+      Cleaned England surname data (2014). Mixed ALL-CAPS/initcap casing
+      normalized via initcap, then deduplicated with summed counts.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, year]
+    columns:
+      - name: name
+        tests: [not_null, dbt_utils.not_empty_string]
+      - name: count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_nrs_surnames
+    description: Cleaned NRS Scotland surname data
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_cso_surnames
+    description: >
+      Cleaned CSO Ireland surname data (PxStat format). VALUE = rank,
+      used as count proxy for downstream compatibility.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, year]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+
+  - name: stg_ni_surnames
+    description: >
+      Irish-origin surnames from Wikipedia, used as a proxy for Northern Ireland.
+      Count is a presence marker (1), not a frequency.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name]
+    columns:
+      - name: name
+        tests: [not_null, unique, dbt_utils.not_empty_string]
+      - name: count
+        tests: [not_null]
+      - name: year
+        tests: [not_null, {accepted_values: {values: ["date '1901-01-01'"], quote: false}}]
+
+  - name: stg_wales_surnames
+    description: >
+      Wales surname data from Wikipedia (Welsh-origin) and Wiktionary
+      (England & Wales top 250, 2002). Wiki artifacts stripped, names
+      deduplicated, counts coalesced to 1 where unavailable.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name]
+    columns:
+      - name: name
+        tests: [not_null, unique, dbt_utils.not_empty_string]
+      - name: count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null, {accepted_values: {values: ["date '2002-01-01'"], quote: false}}]
+      - name: iso_alpha2
+        tests: [not_null, {accepted_values: {values: ['GB']}}]
+      - name: country_subdivision
+        tests: [not_null, {accepted_values: {values: ['GB-WLS']}}]
+
+  - name: stg_forenames_unioned
+    description: All forename sources unioned into common schema
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, gender_code, year, source, country_subdivision]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_code
+        tests: [not_null]
+      - name: birth_count
+        tests: [not_null]
+      - name: year
+        tests: [not_null]
+      - name: source
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['ssa', 'ons', 'nrs', 'nisra', 'wales', 'cso']
+      - name: iso_alpha2
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['US', 'GB', 'IE']
+
+  - name: stg_surnames_unioned
+    description: All surname sources unioned into common schema
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [name, year, iso_alpha2, country_subdivision]
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: count
+        tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
+      - name: year
+        tests: [not_null]
+      - name: iso_alpha2
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['US', 'GB', 'IE']

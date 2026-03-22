@@ -1,0 +1,12 @@
+population_names:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'db') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'pipeline') }}"
+      pass: "{{ env_var('POSTGRES_PASSWORD', 'pipeline') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'population_names') }}"
+      schema: public
+      threads: 4

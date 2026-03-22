@@ -1,0 +1,30 @@
+name: population_names
+version: "1.0.0"
+config-version: 2
+
+profile: population_names
+
+model-paths: ["models"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Global business rule: exclude data before this year.
+  # The earliest non-US dataset starts at 1975 (Scotland surnames).
+  # US data goes back to 1880 but pre-1975 rows add 1M+ rows with no
+  # cross-country comparison value.
+  min_year: 1975
+
+models:
+  population_names:
+    staging:
+      +schema: staging
+      +materialized: view
+      rejected:
+        +schema: rejected
+        +materialized: view
+    public:
+      +schema: public
+      +year_filter: true
+      surnames:
+        +year_filter: false

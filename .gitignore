@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environments & secrets
+.env
+.venv/
+venv/
+
+# Tools & caches
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+dbt_project/.user.yml
+
+# Airflow
+airflow/logs/
+airflow/plugins/
+
+# Data pipeline (raw files downloaded at setup time, processed tiers generated)
+data/raw/*
+data/archived/*
+data/converted/*
+data/validated/*
+data/done/*
+data/rejected/*
+!data/*/.gitkeep
+
+# Terraform
+terraform/.build/
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/tfplan
+
+# Claude Code
+.claude/
+
+# OS & misc
+.DS_Store
+*.log
+source-data.tar.gz

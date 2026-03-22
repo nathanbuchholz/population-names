@@ -1,0 +1,12 @@
+FROM apache/airflow:3.0.6-python3.12
+
+RUN pip install --no-cache-dir openpyxl psycopg2-binary pyyaml dbt-postgres
+
+# Copy project files needed at runtime (Docker Compose volume-mounts these,
+# but ECS Fargate needs them baked into the image).
+COPY --chown=airflow:root airflow/dags/ /opt/airflow/dags/
+COPY --chown=airflow:root pipeline/ /opt/airflow/pipeline/
+COPY --chown=airflow:root scripts/ /opt/airflow/scripts/
+COPY --chown=airflow:root dbt_project/ /opt/airflow/dbt_project/
+COPY --chown=airflow:root superset/seed_superset.py /opt/airflow/seed_superset.py
+COPY --chown=airflow:root superset/superset_queries.py /opt/airflow/superset_queries.py
