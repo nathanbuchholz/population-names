@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: forenames
+    description: Forename popularity by gender, country, and year
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: gender_id
+        tests: [not_null]
+      - name: country_id
+        tests: [not_null]
+      - name: year
+        tests: [not_null]
+      - name: count
+        tests: [not_null]
+
+  - name: surnames
+    description: Surname popularity by country and year
+    columns:
+      - name: name
+        tests: [not_null]
+      - name: country_id
+        tests: [not_null]
+      - name: year
+        tests: [not_null]
+      - name: count
+        tests: [not_null]

@@ -1,0 +1,436 @@
+sources:
+  # -- England & Wales ---------------------------------------------------------
+
+  ons_forenames:
+    title: ONS England & Wales Forenames
+    description: All forenames registered in England & Wales (names with 3+ occurrences)
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-EAW
+    data_type: forename
+
+    origin:
+      url:
+        - https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/datasets/babynamesenglandandwalesbabynamesstatisticsboys
+        - https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/datasets/babynamesenglandandwalesbabynamesstatisticsgirls
+      license: Open Government Licence v3.0
+      format: xlsx
+
+    store:
+      file_pattern: "england_wales/*names*.xlsx"
+      filename_date_re: '(\d{4})'
+      extract_pattern: "*.csv"
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, 2021]
+        sheet_candidates: ["6"]
+        skip_rows: 6
+        notes_before_header: true
+      - version: v2
+        date_range: [2022, null]
+        sheet_candidates: ["Table_6"]
+        skip_rows: 4
+        notes_before_header: false
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.ons_forenames
+      columns: [name, sex, count, rank, year]
+
+  england_surnames:
+    title: England Surnames
+    description: Common surnames in England (from GitHub CSV)
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-ENG
+    data_type: surname
+
+    origin:
+      url: https://raw.githubusercontent.com/matt40k/Names/main/Surname_Autumn2014.csv
+      license: Open Government Licence v3.0
+      format: csv
+
+    store:
+      file_pattern: "england_wales/*_england_surnames*.csv"
+      filename_date_re: '(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        columns: {name: Surname, count: Count}
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.england_surnames
+      columns: [name, count, year]
+
+  wales_forenames:
+    title: ONS Wales Forenames
+    description: Top 100 forenames for Wales (from ONS England & Wales release, Table 3)
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-WLS
+    data_type: forename
+
+    origin:
+      url: https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/datasets/babynamesenglandandwalestop100babynameshistoricaldata
+      license: Open Government Licence v3.0
+      format: xlsx
+
+    store:
+      file_pattern: "england_wales/*names*.xlsx"
+      filename_date_re: '(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, 2021]
+        sheet_candidates: ["3"]
+        skip_rows: 4
+        notes_before_header: true
+      - version: v2
+        date_range: [2022, null]
+        sheet_candidates: ["Table_3"]
+        skip_rows: 4
+        notes_before_header: false
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.wales_forenames
+      columns: [name, sex, count, rank, year]
+
+  wales_surnames:
+    title: Wales Surnames
+    description: >
+      Welsh-origin surnames (Wikipedia) combined with top 250 England & Wales
+      surnames (Wiktionary, 2002 data). Not a Wales-only source.
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-WLS
+    data_type: surname
+
+    origin:
+      url:
+        - https://en.wikipedia.org/wiki/Category:Surnames_of_Welsh_origin
+        - https://en.wiktionary.org/wiki/Appendix:English_surnames_(England_and_Wales)
+      license: Creative Commons Attribution-ShareAlike 4.0
+      format: html
+      retrieval:
+        method: scrape
+        script: scripts/scrapers/scrape_wales_surnames.py
+
+    store:
+      output_format: csv
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+
+    db:
+      table: raw.wales_surnames
+      columns: [name, rank, count, origin]
+
+  # -- Scotland ----------------------------------------------------------------
+
+  nrs_forenames:
+    title: NRS Scotland Forenames
+    description: Scottish forenames from birth certificates (all names with 3+ occurrences)
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-SCT
+    data_type: forename
+
+    origin:
+      url: https://www.nrscotland.gov.uk/publications/babies-first-names-2024/
+      license: Open Government Licence v3.0
+      format: csv
+
+    store:
+      file_pattern: "scotland/*_forenames*.csv"
+      filename_date_re: '(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        column_map: {name: Name, sex: Sex, count: Number, rank: Rank, year: Year}
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.nrs_forenames
+      columns: [name, sex, count, rank, year]
+
+  nrs_surnames:
+    title: NRS Scotland Surnames
+    description: Most common surnames from Scottish birth, marriage, and death registers
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-SCT
+    data_type: surname
+
+    origin:
+      url: https://www.nrscotland.gov.uk/publications/most-common-surnames-2024
+      license: Open Government Licence v3.0
+      format: xlsx
+
+    store:
+      file_pattern: "scotland/*_surnames*.xlsx"
+      filename_date_re: '(\d{4})'
+      extract_pattern: "*.csv"
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        sheet_name: "Surnames TimeSeries 1975to2024"
+        skip_rows: 3
+
+    db:
+      table: raw.nrs_surnames
+      columns: [name, count, rank, year]
+
+  # -- Northern Ireland --------------------------------------------------------
+
+  nisra_forenames:
+    title: NISRA Northern Ireland Forenames
+    description: Northern Ireland forenames from birth registrations
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-NIR
+    data_type: forename
+
+    origin:
+      url: https://www.nisra.gov.uk/publications/baby-names-2024
+      license: Open Government Licence v3.0
+      format: xlsx
+
+    store:
+      file_pattern: "northern_ireland/*_northern_ireland_forenames*.xlsx"
+      filename_date_re: '(\d{4})'
+      extract_pattern: "*.csv"
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        sheets:
+          - {sheet_name: "Table 1", sex: M}
+          - {sheet_name: "Table 2", sex: F}
+        skip_rows: 4
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.nisra_forenames
+      columns: [name, sex, count, rank, year]
+
+  ni_surnames:
+    title: Northern Ireland Surnames (Wikipedia)
+    description: >
+      Irish-origin surnames from Wikipedia, used as a proxy for Northern Ireland.
+      No official NI surname dataset exists with a clear license.
+    country: United Kingdom
+    iso_alpha2: GB
+    subdivision_code: GB-NIR
+    data_type: surname
+
+    origin:
+      url:
+        - https://en.wikipedia.org/wiki/Category:Anglicised_Irish-language_surnames
+        - https://en.wikipedia.org/wiki/Category:Surnames_of_Irish_origin
+      license: Creative Commons Attribution-ShareAlike 4.0
+      format: html
+      retrieval:
+        method: scrape
+        script: scripts/scrapers/scrape_ni_surnames.py
+
+    store:
+      output_format: csv
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+
+    db:
+      table: raw.ni_surnames
+      columns: [name, origin]
+
+  # -- Republic of Ireland -----------------------------------------------------
+
+  cso_forenames_boys:
+    title: CSO Ireland Boys Forenames
+    description: Republic of Ireland boys forenames (PxStat format)
+    country: Ireland
+    iso_alpha2: IE
+    subdivision_code: null
+    data_type: forename
+
+    origin:
+      url: https://www.cso.ie/en/releasesandpublications/ep/p-ibn/irishbabiesnames2025/data/
+      license: Creative Commons Attribution 4.0
+      format: csv
+
+    store:
+      file_pattern: "ireland/*_ireland_boys_forenames*.csv"
+      filename_date_re: '^(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        format: pxstat
+        name_column: "Boys Names"
+        value_meaning: count
+        sex: M
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.cso_forenames_boys
+      columns: [name, sex, count, rank, year]
+
+  cso_forenames_girls:
+    title: CSO Ireland Girls Forenames
+    description: Republic of Ireland girls forenames (PxStat format)
+    country: Ireland
+    iso_alpha2: IE
+    subdivision_code: null
+    data_type: forename
+
+    origin:
+      url: https://www.cso.ie/en/releasesandpublications/ep/p-ibn/irishbabiesnames2025/data/
+      license: Creative Commons Attribution 4.0
+      format: csv
+
+    store:
+      file_pattern: "ireland/*_ireland_girls_forenames*.csv"
+      filename_date_re: '^(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        format: pxstat
+        name_column: "Girls Names"
+        value_meaning: count
+        sex: F
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.cso_forenames_girls
+      columns: [name, sex, count, rank, year]
+
+  cso_surnames:
+    title: CSO Ireland Surnames
+    description: Republic of Ireland surnames (PxStat format, VALUE = rank)
+    country: Ireland
+    iso_alpha2: IE
+    subdivision_code: null
+    data_type: surname
+
+    origin:
+      url: https://www.cso.ie/en/releasesandpublications/ep/p-ibn/irishbabiesnames2025/data/
+      license: Creative Commons Attribution 4.0
+      format: csv
+
+    store:
+      file_pattern: "ireland/*_ireland_surnames*.csv"
+      filename_date_re: '^(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        format: pxstat
+        name_column: "Surnames"
+        value_meaning: rank
+
+    quality:
+      max_rejected_pct: 10
+      expected_columns: ["Statistic Label", "Year", "Surnames", "UNIT", "VALUE"]
+
+    db:
+      table: raw.cso_surnames
+      columns: [name, count, rank, year]
+
+  # -- United States -------------------------------------------------------------
+
+  ssa_forenames:
+    title: SSA US Forenames
+    description: US forenames from Social Security Administration
+    country: United States
+    iso_alpha2: US
+    subdivision_code: null
+    data_type: forename
+
+    origin:
+      url: https://www.ssa.gov/oact/babynames/names.zip
+      license: Public Domain
+      format: csv
+
+    store:
+      file_pattern: "usa/forenames/yob*.txt"
+      filename_date_re: 'yob(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        format: headerless_csv
+        columns: [name, sex, count]
+
+    quality:
+      max_rejected_pct: 1
+
+    db:
+      table: raw.ssa_forenames
+      columns: [name, sex, count, year]
+
+  census_surnames:
+    title: US Census Surnames
+    description: Most common US surnames from 2010 Census
+    country: United States
+    iso_alpha2: US
+    subdivision_code: null
+    data_type: surname
+
+    origin:
+      url: https://www.census.gov/topics/population/genealogy/data/2010_surnames.html
+      license: Public Domain
+      format: csv
+
+    store:
+      file_pattern: "usa/*surnames*.csv"
+      filename_date_re: '(\d{4})'
+      validated_columns: []
+
+    schema_versions:
+      - version: v1
+        date_range: [null, null]
+        format: dict_csv
+        column_map: {name: name, count: count}
+        default_year: 2010
+
+    quality:
+      max_rejected_pct: 5
+
+    db:
+      table: raw.census_surnames
+      columns: [name, count, year]

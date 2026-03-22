@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: rej_ssa_forenames
+    description: Rows rejected from raw.ssa_forenames during staging
+  - name: rej_ons_forenames
+    description: Rows rejected from raw.ons_forenames during staging
+  - name: rej_nrs_forenames
+    description: Rows rejected from raw.nrs_forenames during staging
+  - name: rej_nisra_forenames
+    description: Rows rejected from raw.nisra_forenames during staging
+  - name: rej_wales_forenames
+    description: Rows rejected from raw.wales_forenames during staging
+  - name: rej_cso_forenames_boys
+    description: Rows rejected from raw.cso_forenames_boys during staging
+  - name: rej_cso_forenames_girls
+    description: Rows rejected from raw.cso_forenames_girls during staging
+  - name: rej_census_surnames
+    description: Rows rejected from raw.census_surnames during staging
+  - name: rej_england_surnames
+    description: Rows rejected from raw.england_surnames during staging
+  - name: rej_nrs_surnames
+    description: Rows rejected from raw.nrs_surnames during staging
+  - name: rej_cso_surnames
+    description: Rows rejected from raw.cso_surnames during staging
+  - name: rej_ni_surnames
+    description: Rows rejected from raw.ni_surnames during staging
+  - name: rej_wales_surnames
+    description: Rows rejected from raw.wales_surnames during staging
+  - name: rej_all
+    description: Union of all rejected rows across all sources with common columns

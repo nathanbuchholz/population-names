@@ -1,0 +1,89 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+      - run: uv run ruff check src/ tests/ scripts/ pipeline/
+      - run: uv run ruff format --check src/ tests/ scripts/ pipeline/
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: population_names_test
+          POSTGRES_USER: pipeline
+          POSTGRES_PASSWORD: pipeline
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+      - run: uv run pytest tests/ -v --tb=short --cov=src --cov=pipeline --cov=scripts --cov-report=term-missing
+        env:
+          DATABASE_URL: postgresql+asyncpg://pipeline:pipeline@localhost:5432/population_names_test
+          DATABASE_URL_SYNC: postgresql://pipeline:pipeline@localhost:5432/population_names_test
+          API_KEY: test-api-key
+          AIRFLOW_PASSWORD: test
+
+  dbt-validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: population_names_test
+          POSTGRES_USER: pipeline
+          POSTGRES_PASSWORD: pipeline
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: pipeline
+      POSTGRES_DB: population_names_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+      - run: uv pip install dbt-postgres
+      - name: Run Alembic migrations
+        run: uv run alembic upgrade head
+        env:
+          DATABASE_URL_SYNC: postgresql://pipeline:pipeline@localhost:5432/population_names_test
+      - run: cd dbt_project && uv run dbt deps --profiles-dir .
+      - run: cd dbt_project && uv run dbt run --profiles-dir .
+      # dbt test requires ingested data; validates compilation only in CI
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t api-test .
+      - run: docker build -t airflow-test -f Dockerfile.airflow .
+      - run: docker build -t dbt-test -f Dockerfile.dbt .

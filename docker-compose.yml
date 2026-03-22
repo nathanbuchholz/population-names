@@ -1,0 +1,226 @@
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD}@airflow-metadata:5432/${AIRFLOW_DB_NAME:-airflow}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    AIRFLOW__API__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
+    AIRFLOW__API_AUTH__JWT_SECRET: "${AIRFLOW_JWT_SECRET}"
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: ${AIRFLOW_ADMIN_USER:-admin}:${AIRFLOW_ADMIN_PASSWORD}
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"
+    DBT_USE_COLORS: "False"
+    PIPELINE_DB_HOST: db
+    PIPELINE_DB_PORT: "5432"
+    PIPELINE_DB_USER: ${POSTGRES_USER:-pipeline}
+    PIPELINE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    PIPELINE_DB_NAME: ${POSTGRES_DB:-population_names}
+    SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
+    SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./data:/opt/airflow/data
+    - ./scripts:/opt/airflow/scripts
+    - ./dbt_project:/opt/airflow/dbt_project
+    - ./pipeline:/opt/airflow/pipeline
+    - ./superset/seed_superset.py:/opt/airflow/seed_superset.py
+    - ./superset/superset_queries.py:/opt/airflow/superset_queries.py
+    - airflow_logs:/opt/airflow/logs
+  depends_on:
+    airflow-metadata:
+      condition: service_healthy
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    shm_size: 256m
+    stop_grace_period: 30s
+    command: postgres -c jit=off
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-population_names}
+      POSTGRES_USER: ${POSTGRES_USER:-pipeline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pipeline} -d ${POSTGRES_DB:-population_names}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-pipeline}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-population_names}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-pipeline}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-population_names}
+      API_KEY: ${API_KEY}
+      AIRFLOW_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+      - ./data:/app/data
+      - ./tests:/app/tests
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+    depends_on:
+      db:
+        condition: service_healthy
+
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile.dbt
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-pipeline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-population_names}
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - dbt
+
+  airflow-metadata:
+    image: postgres:16-alpine
+    shm_size: 256m
+    stop_grace_period: 30s
+    command: postgres -c jit=off
+    environment:
+      POSTGRES_DB: ${AIRFLOW_DB_NAME:-airflow}
+      POSTGRES_USER: ${AIRFLOW_DB_USER:-airflow}
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD}
+    volumes:
+      - airflow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AIRFLOW_DB_USER:-airflow} -d ${AIRFLOW_DB_NAME:-airflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command: >
+      -c "
+      airflow db migrate &&
+      airflow connections add pipeline_db
+        --conn-type postgres
+        --conn-host db
+        --conn-port 5432
+        --conn-login ${POSTGRES_USER:-pipeline}
+        --conn-password ${POSTGRES_PASSWORD}
+        --conn-schema ${POSTGRES_DB:-population_names} || true
+      "
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "8080:8080"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v2/monitor/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  superset-metadata:
+    image: postgres:16-alpine
+    shm_size: 256m
+    stop_grace_period: 30s
+    command: postgres -c jit=off
+    environment:
+      POSTGRES_DB: ${SUPERSET_DB_NAME:-superset}
+      POSTGRES_USER: ${SUPERSET_DB_USER:-superset}
+      POSTGRES_PASSWORD: ${SUPERSET_DB_PASSWORD}
+    volumes:
+      - superset_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SUPERSET_DB_USER:-superset} -d ${SUPERSET_DB_NAME:-superset}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  superset-init:
+    image: apache/superset:6.0.0
+    user: root
+    entrypoint: /bin/bash
+    command: /app/superset-init.sh
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+      SUPERSET_DB_USER: ${SUPERSET_DB_USER:-superset}
+      SUPERSET_DB_PASSWORD: ${SUPERSET_DB_PASSWORD}
+      SUPERSET_DB_NAME: ${SUPERSET_DB_NAME:-superset}
+      SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
+      PIPELINE_DB_USER: ${POSTGRES_USER:-pipeline}
+      PIPELINE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      PIPELINE_DB_NAME: ${POSTGRES_DB:-population_names}
+    volumes:
+      - ./superset/superset_config.py:/app/superset_config.py
+      - ./superset/superset-init.sh:/app/superset-init.sh
+      - superset_home:/app/superset_home
+    depends_on:
+      superset-metadata:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  superset:
+    image: apache/superset:6.0.0
+    user: root
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - uv pip install psycopg2-binary --python /app/.venv/bin/python && gunicorn --bind 0.0.0.0:8088 --workers 2 --timeout 120 "superset.app:create_app()"
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+      SUPERSET_DB_USER: ${SUPERSET_DB_USER:-superset}
+      SUPERSET_DB_PASSWORD: ${SUPERSET_DB_PASSWORD}
+      SUPERSET_DB_NAME: ${SUPERSET_DB_NAME:-superset}
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./superset/superset_config.py:/app/superset_config.py
+      - superset_home:/app/superset_home
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8088/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  pgdata:
+  airflow_pgdata:
+  airflow_logs:
+  superset_pgdata:
+  superset_home:
