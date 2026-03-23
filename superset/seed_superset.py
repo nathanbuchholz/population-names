@@ -322,7 +322,7 @@ def create_trends_charts(ds, dashboard_id):
         )
     )
 
-    # Nathan + Sarah cross-country (% of births)
+    # Cross-country name popularity (filtered by dashboard name filter)
     ids.append(
         create_chart(
             "'Nathan' Cross-Country",
@@ -334,15 +334,15 @@ def create_trends_charts(ds, dashboard_id):
                 "metrics": [_adhoc_metric(ftmy_cols["pct_of_year_total"], "SUM", "% of births")],
                 "groupby": ["country"],
                 "adhoc_filters": [
-                    _adhoc_filter("name", "Nathan"),
                     _adhoc_filter("gender", "Male"),
+                    _adhoc_filter("name", "Nathan"),
                 ],
                 "row_limit": 10000,
                 "order_desc": False,
                 "show_legend": True,
                 "rich_tooltip": True,
             },
-            description="Historical popularity of 'Nathan' across countries, measured as % of all births that year.",
+            description="Cross-country popularity over time. Use the Male Name filter to change the name shown.",
         )
     )
 
@@ -357,15 +357,15 @@ def create_trends_charts(ds, dashboard_id):
                 "metrics": [_adhoc_metric(ftmy_cols["pct_of_year_total"], "SUM", "% of births")],
                 "groupby": ["country"],
                 "adhoc_filters": [
-                    _adhoc_filter("name", "Sarah"),
                     _adhoc_filter("gender", "Female"),
+                    _adhoc_filter("name", "Sarah"),
                 ],
                 "row_limit": 10000,
                 "order_desc": False,
                 "show_legend": True,
                 "rich_tooltip": True,
             },
-            description="Cross-country comparison of 'Sarah' over time, measured as % of all births that year.",
+            description="Cross-country popularity over time. Use the Female Name filter to change the name shown.",
         )
     )
 
@@ -411,7 +411,7 @@ def create_trends_charts(ds, dashboard_id):
                         "column": "Letter %",
                         "operator": ">",
                         "targetValue": 0,
-                        "colorScheme": "#3D7B6A",
+                        "colorScheme": "#E6F3F0",
                     }
                 ],
                 "row_limit": 10000,
@@ -449,9 +449,14 @@ def create_snapshot_charts(ds, dashboard_id):
                     _adhoc_filter("country_code", "US"),
                     _adhoc_filter("rank", 10, "<="),
                 ],
-                "row_limit": 10,
+                "row_limit": 50,
                 "order_desc": True,
                 "show_legend": True,
+                "x_axis_sort_asc": False,
+                "x_axis_sort_series": "sum",
+                "x_axis_sort_series_ascending": False,
+                "xAxisLabelRotation": 45,
+                "truncateXAxis": False,
             },
             description="Most popular US baby names in the latest available year (% of births), split by gender.",
         )
@@ -472,9 +477,14 @@ def create_snapshot_charts(ds, dashboard_id):
                     _adhoc_filter("rank", 11, "<="),
                     _adhoc_filter("rank", 1, ">"),
                 ],
-                "row_limit": 10,
+                "row_limit": 50,
                 "order_desc": True,
                 "show_legend": False,
+                "x_axis_sort_asc": False,
+                "x_axis_sort_series": "sum",
+                "x_axis_sort_series_ascending": False,
+                "xAxisLabelRotation": 45,
+                "truncateXAxis": False,
             },
             description="Ten most common US surnames from the 2010 Census (% of population).",
         )
@@ -503,8 +513,8 @@ def create_snapshot_charts(ds, dashboard_id):
                 "column_config": {
                     "male_count": {"d3NumberFormat": ",d"},
                     "female_count": {"d3NumberFormat": ",d"},
-                    "pct_of_births": {"d3NumberFormat": ".4f"},
-                    "balance_pct": {"d3NumberFormat": ".1f"},
+                    "pct_of_births": {"d3NumberFormat": ".2f", "suffix": "%"},
+                    "balance_pct": {"d3NumberFormat": ".1f", "suffix": "%"},
                 },
             },
             description=(
@@ -528,7 +538,7 @@ def create_snapshot_charts(ds, dashboard_id):
                 "order_desc": True,
                 "order_by_cols": ['["avg_pct_of_births", false]'],
                 "column_config": {
-                    "avg_pct_of_births": {"d3NumberFormat": ".4f"},
+                    "avg_pct_of_births": {"d3NumberFormat": ".2f", "suffix": "%"},
                 },
             },
             description=(
@@ -559,8 +569,8 @@ def create_snapshot_charts(ds, dashboard_id):
                 "order_desc": True,
                 "order_by_cols": ['["distinctiveness_ratio", false]'],
                 "column_config": {
-                    "local_pct": {"d3NumberFormat": ".4f"},
-                    "global_avg_pct": {"d3NumberFormat": ".4f"},
+                    "local_pct": {"d3NumberFormat": ".2f", "suffix": "%"},
+                    "global_avg_pct": {"d3NumberFormat": ".2f", "suffix": "%"},
                     "distinctiveness_ratio": {"d3NumberFormat": ".1f"},
                 },
             },
@@ -705,7 +715,7 @@ def create_validation_charts(ds, dashboard_id):
                         "column": "Rows",
                         "operator": ">",
                         "targetValue": 0,
-                        "colorScheme": "#3D7B6A",
+                        "colorScheme": "#E6F3F0",
                     }
                 ],
                 "row_limit": 10000,
@@ -758,7 +768,7 @@ def create_validation_charts(ds, dashboard_id):
                     "rejected_count": {"d3NumberFormat": ",d"},
                 },
             },
-            description="Rows rejected during staging, grouped by source, file, and rejection reason.",
+            description="Rows rejected during staging, grouped by source, file, and rejection reason. No data indicates no rejected rows.",
         )
     )
 
@@ -947,11 +957,73 @@ def main():
         trends_ids[4]: "Top Name Share Over Time",
         trends_ids[5]: "Letter Distribution",
     }
+    # Cross-country charts first (top row), then diversity, then others
     position, metadata = _build_layout(
         "Name Trends",
-        [trends_ids[0:2], trends_ids[2:4], trends_ids[4:6]],
+        [trends_ids[2:4], trends_ids[0:2], trends_ids[4:6]],
         trends_names,
     )
+    # Add native filters for name selection (dropdown with default values)
+    ftmy_ds_id = ds["Forename Trends Multi-Year"]
+    male_chart_id = trends_ids[2]
+    female_chart_id = trends_ids[3]
+    metadata["native_filter_configuration"] = [
+        {
+            "id": "NATIVE_FILTER-male-name",
+            "name": "Male Name",
+            "filterType": "filter_select",
+            "targets": [{"datasetId": ftmy_ds_id, "column": {"name": "name"}}],
+            "defaultDataMask": {
+                "filterState": {
+                    "value": ["Nathan"],
+                    "label": "Nathan",
+                },
+                "extraFormData": {
+                    "filters": [{"col": "name", "op": "IN", "val": ["Nathan"]}],
+                },
+            },
+            "scope": {
+                "rootPath": ["ROOT_ID"],
+                "excluded": [cid for cid in trends_ids if cid != male_chart_id],
+            },
+            "controlValues": {
+                "enableEmptyFilter": False,
+                "defaultToFirstItem": False,
+                "multiSelect": False,
+                "searchAllOptions": True,
+                "inverseSelection": False,
+            },
+            "chartsInScope": [male_chart_id],
+        },
+        {
+            "id": "NATIVE_FILTER-female-name",
+            "name": "Female Name",
+            "filterType": "filter_select",
+            "targets": [{"datasetId": ftmy_ds_id, "column": {"name": "name"}}],
+            "defaultDataMask": {
+                "filterState": {
+                    "value": ["Sarah"],
+                    "label": "Sarah",
+                },
+                "extraFormData": {
+                    "filters": [{"col": "name", "op": "IN", "val": ["Sarah"]}],
+                },
+            },
+            "scope": {
+                "rootPath": ["ROOT_ID"],
+                "excluded": [cid for cid in trends_ids if cid != female_chart_id],
+            },
+            "controlValues": {
+                "enableEmptyFilter": False,
+                "defaultToFirstItem": False,
+                "multiSelect": False,
+                "searchAllOptions": True,
+                "inverseSelection": False,
+            },
+            "chartsInScope": [female_chart_id],
+        },
+    ]
+    metadata["filter_bar_orientation"] = "VERTICAL"
     _request(
         "PUT",
         f"/api/v1/dashboard/{trends_dash}",
