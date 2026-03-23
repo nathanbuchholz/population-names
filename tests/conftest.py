@@ -13,10 +13,18 @@ from src.api.main import app
 from src.db.models import Base
 from src.db.session import get_session
 
-TEST_DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql+asyncpg://pipeline:pipeline@localhost:5432/population_names_test",
-)
+def _get_test_db_url() -> str:
+    """Derive test DB URL: use TEST_DATABASE_URL env var, or swap the DB name in settings."""
+    if url := os.environ.get("TEST_DATABASE_URL"):
+        return url
+    from src.api.config import settings
+
+    base = settings.database_url
+    # Replace the database name with the test database
+    return base.rsplit("/", 1)[0] + "/population_names_test"
+
+
+TEST_DATABASE_URL = _get_test_db_url()
 
 engine = create_async_engine(TEST_DATABASE_URL, pool_size=5, max_overflow=0, pool_pre_ping=True)
 test_session_factory = async_sessionmaker(engine, expire_on_commit=False)

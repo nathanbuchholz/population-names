@@ -67,14 +67,37 @@ def download(force: bool = False) -> None:
     tarball = DATA_DIR / ASSET_NAME
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Try direct curl download first, fall back to gh CLI
+    curl_ok = False
     try:
         subprocess.run(
             ["curl", "-fSL", "-o", str(tarball), url],
             check=True,
         )
+        curl_ok = True
     except subprocess.CalledProcessError:
-        logger.error("Download failed. To set up data manually, see README.")
-        sys.exit(1)
+        pass
+
+    if not curl_ok:
+        try:
+            subprocess.run(
+                [
+                    "gh",
+                    "release",
+                    "download",
+                    RELEASE_TAG,
+                    "--pattern",
+                    ASSET_NAME,
+                    "--output",
+                    str(tarball),
+                    "--clobber",
+                ],
+                capture_output=True,
+                check=True,
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.error("Download failed. To set up data manually, see README.")
+            sys.exit(1)
 
     logger.info("Extracting to data/ ...")
     with tarfile.open(tarball) as tar:

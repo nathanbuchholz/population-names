@@ -39,6 +39,7 @@ jobs:
       - run: uv sync --frozen --python 3.13 --extra dev
       - run: uv run pytest tests/ -v --tb=short --cov=src --cov=pipeline --cov=scripts --cov-report=term-missing
         env:
+          TEST_DATABASE_URL: postgresql+asyncpg://pipeline:pipeline@localhost:5432/population_names_test
           DATABASE_URL: postgresql+asyncpg://pipeline:pipeline@localhost:5432/population_names_test
           DATABASE_URL_SYNC: postgresql://pipeline:pipeline@localhost:5432/population_names_test
           API_KEY: test-api-key

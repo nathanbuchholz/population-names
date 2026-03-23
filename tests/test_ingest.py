@@ -16,10 +16,12 @@ from scripts.ingest import ingest_source
 @pytest.fixture
 def pg_conn():
     """Sync psycopg2 connection to test DB, with raw schema setup/teardown."""
-    url = os.environ.get(
-        "DATABASE_URL_SYNC",
-        "postgresql://pipeline:pipeline@localhost:5432/population_names_test",
-    )
+    url = os.environ.get("DATABASE_URL_SYNC")
+    if not url:
+        from src.api.config import settings
+
+        base = settings.database_url_sync or settings.database_url.replace("+asyncpg", "")
+        url = base.rsplit("/", 1)[0] + "/population_names_test"
     conn = psycopg2.connect(url)
     cur = conn.cursor()
     cur.execute("CREATE SCHEMA IF NOT EXISTS raw")
