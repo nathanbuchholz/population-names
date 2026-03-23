@@ -564,9 +564,9 @@ class TestCSOSurnames:
         results = transform_cso_surnames(archived, converted, cfg)
         with open(results[0]) as f:
             rows = list(csv.DictReader(f))
-        # VALUE=1 goes to rank column, count is empty
+        # VALUE=1 goes to rank column, count is 1 (presence marker)
         assert rows[0]["rank"] == "1"
-        assert rows[0]["count"] == ""
+        assert rows[0]["count"] == "1"
 
     def test_count_meaning(self, tmp_path):
         from pipeline.transforms.ie import transform_cso_surnames

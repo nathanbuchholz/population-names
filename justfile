@@ -12,10 +12,15 @@ gen-env:
     @echo "Generating .env with random secrets..."
     @python3 -c "\
     import secrets; \
+    pg_pass = secrets.token_urlsafe(32); \
+    af_pass = secrets.token_urlsafe(16); \
     lines = [ \
         f'POSTGRES_DB=population_names', \
         f'POSTGRES_USER=pipeline', \
-        f'POSTGRES_PASSWORD={secrets.token_urlsafe(32)}', \
+        f'POSTGRES_PASSWORD={pg_pass}', \
+        f'DATABASE_URL=postgresql+asyncpg://pipeline:{pg_pass}@localhost:5432/population_names', \
+        f'DATABASE_URL_SYNC=postgresql://pipeline:{pg_pass}@localhost:5432/population_names', \
+        f'TEST_DATABASE_URL=postgresql+asyncpg://pipeline:{pg_pass}@localhost:5432/population_names_test', \
         f'', \
         f'API_KEY={secrets.token_urlsafe(32)}', \
         f'', \
@@ -28,7 +33,8 @@ gen-env:
         f'AIRFLOW_JWT_SECRET={secrets.token_urlsafe(32)}', \
         f'', \
         f'AIRFLOW_ADMIN_USER=admin', \
-        f'AIRFLOW_ADMIN_PASSWORD={secrets.token_urlsafe(16)}', \
+        f'AIRFLOW_ADMIN_PASSWORD={af_pass}', \
+        f'AIRFLOW_PASSWORD={af_pass}', \
         f'', \
         f'SUPERSET_DB_USER=superset', \
         f'SUPERSET_DB_NAME=superset', \
@@ -65,6 +71,7 @@ setup: clean _ensure-env download _fix-data-perms up
     @echo "Waiting for services to be healthy (timeout: {{ setup_timeout }}s per service)..."
     @just _wait-until "docker compose exec -T db pg_isready -U pipeline -d population_names" "Database"
     @just _wait-until "curl -sf http://localhost:8000/health" "API"
+    @docker compose exec -T db psql -U pipeline -d postgres -c "SELECT 1 FROM pg_database WHERE datname = 'population_names_test'" | grep -q 1 || docker compose exec -T db psql -U pipeline -d postgres -c "CREATE DATABASE population_names_test OWNER pipeline" {{ _q }}
     @echo "Running migrations..."
     @just migrate
     @echo "Migrations complete."
@@ -87,6 +94,7 @@ setup: clean _ensure-env download _fix-data-perms up
         exit 1; \
     fi
     @echo "Airflow ready."
+    @docker compose exec -T airflow-scheduler airflow pools set dbt 6 "Limits concurrent dbt commands to avoid catalog lock contention" {{ _q }} || true
     @docker compose exec -T airflow-scheduler airflow dags unpause trigger_all_sources {{ _q }} || true
     @docker compose exec -T airflow-scheduler airflow dags unpause refresh_superset {{ _q }} || true
     @echo "Unpausing source DAGs..."

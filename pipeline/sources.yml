@@ -364,7 +364,7 @@ sources:
 
     quality:
       max_rejected_pct: 10
-      expected_columns: ["Statistic Label", "Year", "Surnames", "UNIT", "VALUE"]
+      expected_columns: ["STATISTIC", "Statistic Label", "TLIST(A1)", "Year", "C04258V05032", "Surnames", "UNIT", "VALUE"]
 
     db:
       table: raw.cso_surnames

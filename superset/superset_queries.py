@@ -402,11 +402,11 @@ WITH multi_year AS (
     SELECT country_id FROM forenames
     GROUP BY country_id HAVING COUNT(DISTINCT year) > 1
 )
-SELECT c.name AS country, f.year, COUNT(*) AS row_count
+SELECT c.name AS country, EXTRACT(YEAR FROM f.year)::int::text AS year, COUNT(*) AS row_count
 FROM forenames f
 JOIN countries c ON f.country_id = c.country_id
 JOIN multi_year m ON f.country_id = m.country_id
-GROUP BY c.name, f.year""",
+GROUP BY c.name, year""",
     # -----------------------------------------------------------------------
     # Surname Year Coverage (multi-year countries only)
     # -----------------------------------------------------------------------
@@ -415,11 +415,11 @@ WITH multi_year AS (
     SELECT country_id FROM surnames
     GROUP BY country_id HAVING COUNT(DISTINCT year) > 1
 )
-SELECT c.name AS country, s.year, COUNT(*) AS row_count
+SELECT c.name AS country, EXTRACT(YEAR FROM s.year)::int::text AS year, COUNT(*) AS row_count
 FROM surnames s
 JOIN countries c ON s.country_id = c.country_id
 JOIN multi_year m ON s.country_id = m.country_id
-GROUP BY c.name, s.year""",
+GROUP BY c.name, year""",
     # -----------------------------------------------------------------------
     # Raw Source Counts
     # -----------------------------------------------------------------------
@@ -653,7 +653,7 @@ DATASET_CONFIG = {
             {"metric_name": "Male Count", "expression": "SUM(male_count)", "d3format": ",d"},
             {"metric_name": "Female Count", "expression": "SUM(female_count)", "d3format": ",d"},
             {"metric_name": "Total Count", "expression": "SUM(total_count)", "d3format": ",d"},
-            {"metric_name": "% of Births", "expression": "AVG(pct_of_births)", "d3format": ",.4f"},
+            {"metric_name": "% of Births", "expression": "AVG(pct_of_births)", "d3format": ",.2f"},
             {"metric_name": "Balance %", "expression": "AVG(balance_pct)", "d3format": ",.1f"},
         ],
     },
@@ -663,18 +663,18 @@ DATASET_CONFIG = {
             {
                 "metric_name": "Avg % of Births",
                 "expression": "MAX(avg_pct_of_births)",
-                "d3format": ",.4f",
+                "d3format": ",.2f",
             },
         ],
     },
     "Country Signature Names": {
         "dimensions": ["name", "country", "country_code", "gender"],
         "metrics": [
-            {"metric_name": "Local %", "expression": "MAX(local_pct)", "d3format": ",.4f"},
+            {"metric_name": "Local %", "expression": "MAX(local_pct)", "d3format": ",.2f"},
             {
                 "metric_name": "Global Avg %",
                 "expression": "MAX(global_avg_pct)",
-                "d3format": ",.4f",
+                "d3format": ",.2f",
             },
             {
                 "metric_name": "Distinctiveness",
@@ -743,7 +743,7 @@ DATASET_CONFIG = {
             {
                 "metric_name": "% of Births",
                 "expression": "AVG(pct_of_year_total)",
-                "d3format": ",.4f",
+                "d3format": ",.2f",
             },
         ],
     },

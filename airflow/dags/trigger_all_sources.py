@@ -5,15 +5,17 @@ Supports passthrough of 'force' config.
 """
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # Airflow 3 is installed in the Docker container, not the local venv
 from airflow.providers.standard.operators.trigger_dagrun import (
     TriggerDagRunOperator,  # type: ignore[import-not-found]
 )
-from dag_config import DAG_START_DATE
 
 from airflow import DAG
+
+DAG_START_DATE = datetime(2026, 3, 1)
 
 # Make pipeline package importable inside Airflow
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

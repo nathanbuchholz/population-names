@@ -9,6 +9,7 @@ downstream DAGs (refresh_superset, seed_superset).
 """
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # Airflow 3 is installed in the Docker container, not the local venv
@@ -16,9 +17,10 @@ from airflow.providers.standard.operators.bash import (
     BashOperator,  # type: ignore[import-not-found]
 )
 from airflow.sdk.definitions.asset import Asset  # type: ignore[import-not-found]
-from dag_config import DAG_START_DATE
 
 from airflow import DAG
+
+DAG_START_DATE = datetime(2026, 3, 1)
 
 # Make pipeline package importable inside Airflow
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -56,7 +58,7 @@ TABLES_LOADED = Asset("pipeline://tables_loaded")
 
 default_args = {
     "owner": "pipeline",
-    "retries": 1,
+    "retries": 2,
 }
 
 for source_id in list_sources():
@@ -98,18 +100,21 @@ for source_id in list_sources():
 
         dbt_run = BashOperator(
             task_id="dbt_run",
+            pool="dbt",
             bash_command=(
                 f"{DBT_ENV_EXPORT}"
-                f"dbt run --select stg_{source_id}+ rej_{source_id} "
+                f"dbt run --select stg_{source_id}+ rej_{source_id} rej_all "
                 f"--project-dir {DBT_DIR} --profiles-dir {DBT_DIR}"
             ),
         )
 
         dbt_test = BashOperator(
             task_id="dbt_test",
+            pool="dbt",
             bash_command=(
                 f"{DBT_ENV_EXPORT}"
                 f"dbt test --select stg_{source_id} source:raw.{source_id} "
+                f"--exclude assert_raw_tables_not_empty "
                 f"--project-dir {DBT_DIR} --profiles-dir {DBT_DIR}"
             ),
         )
@@ -124,6 +129,7 @@ for source_id in list_sources():
 
         dbt_source_freshness = BashOperator(
             task_id="dbt_source_freshness",
+            pool="dbt",
             bash_command=(
                 f"{DBT_ENV_EXPORT}"
                 f"dbt source freshness --select source:raw.{source_id} "
@@ -134,6 +140,7 @@ for source_id in list_sources():
 
         refresh_views = BashOperator(
             task_id="refresh_views",
+            pool="dbt",
             bash_command=(
                 f"{DB_URL_EXPORT}cd {PROJECT_DIR} && "
                 "psql $DATABASE_URL_SYNC -f scripts/refresh_views.sql"

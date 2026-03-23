@@ -52,6 +52,7 @@ def _transform_cso_forenames(archived_dir: Path, converted_dir: Path, cfg: dict)
         year_idx = _find_col(headers, "Year")
         name_idx = _find_col(headers, name_col_name)
         value_idx = _find_col(headers, "VALUE")
+        stat_label_idx = _find_col(headers, "Statistic Label")
 
         if year_idx is None or name_idx is None or value_idx is None:
             continue
@@ -60,6 +61,12 @@ def _transform_cso_forenames(archived_dir: Path, converted_dir: Path, cfg: dict)
         for row in rows:
             if len(row) <= max(year_idx, name_idx, value_idx):
                 continue
+
+            # PxStat files contain both occurrence and rank rows;
+            # skip rank rows to avoid treating ranks as counts.
+            if stat_label_idx is not None and row[stat_label_idx].strip().endswith("Rank"):
+                continue
+
             name = row[name_idx].strip()
             year_str = row[year_idx].strip()
             value_str = row[value_idx].strip()
@@ -106,6 +113,7 @@ def transform_cso_surnames(archived_dir: Path, converted_dir: Path, cfg: dict) -
         year_idx = _find_col(headers, "Year")
         name_idx = _find_col(headers, name_col_name)
         value_idx = _find_col(headers, "VALUE")
+        stat_label_idx = _find_col(headers, "Statistic Label")
 
         if year_idx is None or name_idx is None or value_idx is None:
             continue
@@ -114,6 +122,18 @@ def transform_cso_surnames(archived_dir: Path, converted_dir: Path, cfg: dict) -
         for row in rows:
             if len(row) <= max(year_idx, name_idx, value_idx):
                 continue
+
+            # PxStat files contain both occurrence and rank rows;
+            # keep only rank rows when value_meaning is "rank",
+            # and only occurrence rows when value_meaning is "count".
+            if stat_label_idx is not None:
+                label = row[stat_label_idx].strip()
+                is_rank_row = label.endswith("Rank")
+                if value_meaning == "rank" and not is_rank_row:
+                    continue
+                if value_meaning == "count" and is_rank_row:
+                    continue
+
             name = row[name_idx].strip()
             year_str = row[year_idx].strip()
             value_str = row[value_idx].strip()
@@ -128,8 +148,8 @@ def transform_cso_surnames(archived_dir: Path, converted_dir: Path, cfg: dict) -
             if value_meaning == "count":
                 data_rows.append([name, value, "", year_str])
             else:
-                # VALUE is rank, count not available
-                data_rows.append([name, "", value, year_str])
+                # VALUE is rank; count unavailable, use 1 as presence marker
+                data_rows.append([name, 1, value, year_str])
 
         out_path = converted_dir / archived_file.name
         results.append(write_csv(out_path, ["name", "count", "rank", "year"], data_rows))
