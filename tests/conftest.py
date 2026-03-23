@@ -13,6 +13,7 @@ from src.api.main import app
 from src.db.models import Base
 from src.db.session import get_session
 
+
 def _get_test_db_url() -> str:
     """Derive test DB URL: use TEST_DATABASE_URL env var, or swap the DB name in settings."""
     if url := os.environ.get("TEST_DATABASE_URL"):

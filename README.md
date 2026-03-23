@@ -17,6 +17,7 @@ AWS deployment using Terraform is included but not required.
 - [API](#api)
 - [AWS deployment](#aws-deployment-optional)
 - [Productionalization](#productionalization)
+- [Screenshots](#screenshots)
 
 ## Local development
 
@@ -391,3 +392,16 @@ In a real environment, the main structural changes would be:
 - **Single sign-on.** The API, Airflow, and Superset would all delegate authentication to the organization's identity provider so users get one login across all tools and permissions flow from existing group memberships.
 
 - **Observability.** Pipeline SLAs (freshness breaches, quality gate failures, task duration regressions) would trigger an alerting mechanism (Sentry, PagerDuty, etc). Application logs would be structured JSON with correlation IDs for tracing requests across services.
+
+## Screenshots
+
+<details>
+<summary>Superset dashboards examples (click to expand)</summary>
+
+![Name Snapshots Dashboard](docs/screenshots/superset_name_snapshots.png)
+
+![Name Trends Dashboard](docs/screenshots/superset_name_trends.png)
+
+![Data Validation Dashboard](docs/screenshots/superset_data_validation.png)
+
+</details>
