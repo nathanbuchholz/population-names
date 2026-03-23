@@ -13,7 +13,7 @@ resource "aws_db_subnet_group" "main" {
 resource "aws_db_instance" "main" {
   identifier     = "${local.name_prefix}-pg"
   engine         = "postgres"
-  engine_version = "16.4"
+  engine_version = "16.6"
   instance_class = var.db_instance_class
 
   allocated_storage     = var.db_allocated_storage
@@ -88,7 +88,7 @@ resource "terraform_data" "build_lambda" {
     command = <<-EOT
       rm -rf "${path.module}/.build/lambda"
       mkdir -p "${path.module}/.build/lambda"
-      pip install --target "${path.module}/.build/lambda" pg8000 --quiet
+      uv pip install --target "${path.module}/.build/lambda" pg8000 --quiet
     EOT
   }
 }
