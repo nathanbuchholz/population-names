@@ -183,7 +183,7 @@ models:
       - name: count
         tests: [not_null]
       - name: year
-        tests: [not_null, {accepted_values: {values: ["date '1901-01-01'"], quote: false}}]
+        tests: [not_null, {accepted_values: {values: ["make_date(extract(year from current_date)::int, 1, 1)"], quote: false}}]
 
   - name: stg_wales_surnames
     description: >
