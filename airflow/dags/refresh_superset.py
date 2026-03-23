@@ -9,15 +9,17 @@ import logging
 import os
 import urllib.error
 import urllib.request
+from datetime import datetime
 
 # Airflow 3 is installed in the Docker container, not the local venv
 from airflow.providers.standard.operators.python import (
     PythonOperator,  # type: ignore[import-not-found]
 )
 from airflow.sdk.definitions.asset import Asset  # type: ignore[import-not-found]
-from dag_config import DAG_START_DATE
 
 from airflow import DAG
+
+DAG_START_DATE = datetime(2026, 3, 1)
 
 logger = logging.getLogger(__name__)
 

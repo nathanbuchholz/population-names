@@ -37,6 +37,8 @@ select = ["E", "F", "I", "N", "W", "UP"]
 # Embedded SQL strings and Superset chart descriptions exceed line length
 "superset/*.py" = ["E501"]
 "alembic/versions/*.py" = ["E501"]
+# sys.path.insert() must precede pipeline imports
+"airflow/dags/*.py" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
